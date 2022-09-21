@@ -2,7 +2,6 @@
 src = 'src'
 out = 'out'
 test = 'test'
-script = 'script'
 libs = ['lib']
 verbosity = 2
 bytecode_hash = 'none'
