@@ -508,7 +508,7 @@ contract ERC721PremintTest is Test {
     ) public {
         vm.assume(id > 0 && maxSupply > id);
         vm.assume(to != address(0));
-        vm.assume(from != address(this));
+        vm.assume(from != minter && from != address(0));
         vm.prank(from);
         vm.expectRevert("NOT_AUTHORIZED");
         token.transferFrom(minter, to, id);
