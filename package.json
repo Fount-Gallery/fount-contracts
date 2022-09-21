@@ -1,0 +1,20 @@
+{
+  "name": "fount-contracts",
+  "license": "MIT",
+  "version": "0.1.0",
+  "description": "Shared smart contracts for Fount Gallery projects",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fount-Gallery/fount-contracts.git"
+  },
+  "files": [
+    "src/**/*.sol"
+  ],
+  "scripts": {
+    "prettier": "prettier --write **.sol"
+  },
+  "devDependencies": {
+    "prettier": "^2.7.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.24"
+  }
+}

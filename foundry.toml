@@ -1,6 +1,12 @@
 [default]
 src = 'src'
 out = 'out'
+test = 'test'
+script = 'script'
 libs = ['lib']
+verbosity = 2
+bytecode_hash = 'none'
+solc_version = '0.8.15'
+extra_output_files = ['abi']
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
