@@ -46,14 +46,8 @@ contract FountCardCheckTest is Test {
     CustomCardCheck private cardCheck;
     MockFountCard private fountCard;
 
-    address private holder = mkaddr("holder");
-    address private nonHolder = mkaddr("nonHolder");
-
-    function mkaddr(string memory name) public returns (address) {
-        address addr = address(uint160(uint256(keccak256(abi.encodePacked(name)))));
-        vm.label(addr, name);
-        return addr;
-    }
+    address private holder = makeAddr("holder");
+    address private nonHolder = makeAddr("nonHolder");
 
     function setUp() public {
         fountCard = new MockFountCard();

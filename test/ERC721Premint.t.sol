@@ -70,15 +70,9 @@ contract ERC721PremintTest is Test {
     MockERC721Premint private token;
 
     uint256 private maxSupply = 10000;
-    address private minter = mkaddr("minter");
-    address private operator = mkaddr("operator");
-    address private collector = mkaddr("collector");
-
-    function mkaddr(string memory name) public returns (address) {
-        address addr = address(uint160(uint256(keccak256(abi.encodePacked(name)))));
-        vm.label(addr, name);
-        return addr;
-    }
+    address private minter = makeAddr("minter");
+    address private operator = makeAddr("operator");
+    address private collector = makeAddr("collector");
 
     function setUp() public {
         token = new MockERC721Premint("Token", "TKN", minter, maxSupply);
