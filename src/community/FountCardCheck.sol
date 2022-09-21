@@ -4,7 +4,7 @@ pragma solidity ^0.8.15;
 import "openzeppelin/token/ERC1155/IERC1155.sol";
 
 /**
- * @author Sam King (samkingstudio.eth)
+ * @author Sam King (samkingstudio.eth) for Fount Gallery
  * @title  Fount Gallery Card Check
  * @notice Utility functions to check ownership of a Fount Gallery Patron Card NFT
  */
