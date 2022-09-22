@@ -125,9 +125,40 @@ contract BatchedReleaseExtensionTest is Test {
             assertEq(nft.activeBatch(), 1);
         }
 
-        vm.expectRevert(BatchedReleaseExtension.CannotGoToNextBatchYet.selector);
+        vm.expectRevert(BatchedReleaseExtension.CannotGoToNextBatch.selector);
         nft.goToNextBatch();
         assertEq(nft.activeBatch(), 1);
+    }
+
+    function testCannotGoToNextBatchOnceLastBatchIsCollected() public {
+        assertEq(nft.activeBatch(), 0);
+        nft.goToNextBatch();
+        assertEq(nft.activeBatch(), 1);
+
+        for (uint256 i = 1; i <= batchSize; i++) {
+            nft.mint(collector, i);
+            assertEq(nft.activeBatch(), 1);
+        }
+
+        nft.goToNextBatch();
+        assertEq(nft.activeBatch(), 2);
+
+        for (uint256 i = batchSize + 1; i <= batchSize * 2; i++) {
+            nft.mint(collector, i);
+            assertEq(nft.activeBatch(), 2);
+        }
+
+        nft.goToNextBatch();
+        assertEq(nft.activeBatch(), 3);
+
+        for (uint256 i = batchSize * 2 + 1; i <= batchSize * 3; i++) {
+            nft.mint(collector, i);
+            assertEq(nft.activeBatch(), 3);
+        }
+
+        vm.expectRevert(BatchedReleaseExtension.CannotGoToNextBatch.selector);
+        nft.goToNextBatch();
+        assertEq(nft.activeBatch(), 3);
     }
 
     function testOnlyWhenActiveBatchIs() public {

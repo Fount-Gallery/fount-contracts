@@ -34,7 +34,7 @@ abstract contract BatchedReleaseExtension {
     error NotActiveBatch();
     error TokenNotInBatch();
     error TokenNotInActiveBatch();
-    error CannotGoToNextBatchYet();
+    error CannotGoToNextBatch();
 
     /* ------------------------------------------------------------------------
                                     E V E N T S
@@ -141,7 +141,9 @@ abstract contract BatchedReleaseExtension {
         uint256 nextBatch = (totalCollected() / _batchSize) + 1;
 
         // Check if the batch can be advanced
-        if (activeBatch >= nextBatch) revert CannotGoToNextBatchYet();
+        if (activeBatch >= nextBatch || nextBatch > (_totalTokens / _batchSize)) {
+            revert CannotGoToNextBatch();
+        }
 
         // Increment to go to the next batch
         unchecked {
