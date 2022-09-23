@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import "solmate/tokens/ERC721.sol";
 import "../src/extensions/BatchedReleaseExtension.sol";
 import "../src/extensions/BatchedReleaseOperatorExtension.sol";
-import "../src/interfaces/IOperatorCollectable.sol";
 
 interface IMockNFT {
     function doSomethingWhenOperatorForActiveBatch() external returns (bool);
