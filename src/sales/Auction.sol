@@ -30,12 +30,12 @@ abstract contract Auction {
     AuctionConfig public auctionConfig;
 
     struct AuctionData {
+        address listingOwner;
         uint32 startTime;
         uint32 firstBidTime;
+        uint32 duration;
         uint96 highestBid;
-        uint96 duration;
         address highestBidder;
-        address listingOwner;
     }
 
     /// @notice Token id to auction config if one exists
@@ -99,7 +99,7 @@ abstract contract Auction {
 
         // Create the auction in storage
         auction.startTime = uint32(startTime);
-        auction.duration = uint96(auctionConfig.duration);
+        auction.duration = uint32(auctionConfig.duration);
         auction.listingOwner = nftOwner;
 
         // Increment the number of active auctions
