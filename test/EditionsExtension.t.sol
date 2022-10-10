@@ -6,29 +6,37 @@ import "solmate/tokens/ERC721.sol";
 import "../src/extensions/EditionsExtension.sol";
 
 contract MockNFT is ERC721, EditionsExtension {
-    constructor(uint256 editionsPerToken_)
+    constructor(uint256 editionsPerToken_, uint256 maxBaseTokenId_)
         ERC721("Mock NFT", "NFT")
-        EditionsExtension(editionsPerToken_)
+        EditionsExtension(editionsPerToken_, maxBaseTokenId_)
     {}
+
+    function mint(uint256 id) public onlyWhenEditionsAvailable(id) {
+        uint256 nextEdition = _editionsCollectedForBaseId[id] + 1;
+        uint256 tokenId = _editionInfoToTokenId(id, nextEdition);
+        _mint(msg.sender, tokenId);
+        _collectEdition(id);
+    }
 
     function tokenURI(uint256) public pure override returns (string memory) {
         return "ipfs://<baseHash>/1";
     }
 }
 
-contract ERC721EditionsExtensionTest is Test {
+contract EditionsExtensionTest is Test {
     MockNFT private nft;
 
     address private collector = makeAddr("collector");
 
     uint256 private editionSize = 5;
+    uint256 private maxBaseTokens = 10;
 
     function setUp() public {
-        nft = new MockNFT(editionSize);
+        nft = new MockNFT(editionSize, maxBaseTokens);
     }
 
     function testTokenIdToBaseId() public {
-        vm.expectRevert(EditionsExtension.InvalidId.selector);
+        vm.expectRevert(EditionsExtension.InvalidTokenId.selector);
         nft.tokenIdToBaseId(0);
 
         assertEq(nft.tokenIdToBaseId(1), 1);
@@ -45,7 +53,7 @@ contract ERC721EditionsExtensionTest is Test {
     }
 
     function testTokenIdToEditionNumber() public {
-        vm.expectRevert(EditionsExtension.InvalidId.selector);
+        vm.expectRevert(EditionsExtension.InvalidTokenId.selector);
         nft.tokenIdToEditionNumber(0);
 
         assertEq(nft.tokenIdToEditionNumber(1), 1);
@@ -62,7 +70,7 @@ contract ERC721EditionsExtensionTest is Test {
     }
 
     function testTokenIdToEditionInfo() public {
-        vm.expectRevert(EditionsExtension.InvalidId.selector);
+        vm.expectRevert(EditionsExtension.InvalidTokenId.selector);
         nft.tokenIdToEditionInfo(0);
 
         for (uint256 i = 1; i <= 12; i++) {
@@ -77,11 +85,11 @@ contract ERC721EditionsExtensionTest is Test {
         }
     }
 
-    function testEditionInfoTokTokenId() public {
-        vm.expectRevert(EditionsExtension.InvalidId.selector);
+    function testEditionInfoToTokenId() public {
+        vm.expectRevert(EditionsExtension.InvalidBaseId.selector);
         nft.editionInfoToTokenId(0, 1);
 
-        vm.expectRevert(EditionsExtension.InvalidId.selector);
+        vm.expectRevert(EditionsExtension.InvalidEditionNumber.selector);
         nft.editionInfoToTokenId(1, 0);
 
         assertEq(nft.editionInfoToTokenId(1, 1), 1);
@@ -95,5 +103,31 @@ contract ERC721EditionsExtensionTest is Test {
         assertEq(nft.editionInfoToTokenId(2, 4), 9);
         assertEq(nft.editionInfoToTokenId(2, 5), 10);
         assertEq(nft.editionInfoToTokenId(3, 1), 11);
+    }
+
+    function testOnlyWhenEditionsAvailable() public {
+        vm.startPrank(collector);
+
+        // Invalid base id
+        vm.expectRevert(EditionsExtension.InvalidBaseId.selector);
+        nft.mint(0);
+
+        vm.expectRevert(EditionsExtension.InvalidBaseId.selector);
+        nft.mint(maxBaseTokens + 1);
+
+        // Mint all editions
+        for (uint256 id = 1; id <= 5; id++) {
+            nft.mint(1);
+            assertEq(nft.ownerOf(id), collector);
+        }
+
+        // Next mint for baseId 1 should fail
+        vm.expectRevert(EditionsExtension.EditionSoldOut.selector);
+        nft.mint(1);
+
+        nft.mint(maxBaseTokens);
+        assertEq(nft.ownerOf(((maxBaseTokens - 1) * editionSize) + 1), collector);
+
+        vm.stopPrank();
     }
 }

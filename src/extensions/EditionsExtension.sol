@@ -14,11 +14,33 @@ abstract contract EditionsExtension {
     /// @dev Total number of editions per base token
     uint256 internal _editionsPerToken;
 
+    /// @dev The maximum number of base tokens that are available
+    uint256 internal _maxBaseTokenId;
+
+    /// @dev Keeps track of collected editions for a given base token ID
+    mapping(uint256 => uint256) internal _editionsCollectedForBaseId;
+
     /* ------------------------------------------------------------------------
                                     E R R O R S
     ------------------------------------------------------------------------ */
 
-    error InvalidId();
+    error InvalidTokenId();
+    error InvalidBaseId();
+    error InvalidEditionNumber();
+    error EditionSoldOut();
+
+    /* ------------------------------------------------------------------------
+                                 M O D I F I E R S
+    ------------------------------------------------------------------------ */
+
+    /**
+     * @dev Only when there are still editions available for a given base token ID
+     */
+    modifier onlyWhenEditionsAvailable(uint256 baseId) {
+        if (baseId == 0 || baseId > _maxBaseTokenId) revert InvalidBaseId();
+        if (_editionsCollectedForBaseId[baseId] == _editionsPerToken) revert EditionSoldOut();
+        _;
+    }
 
     /* ------------------------------------------------------------------------
                                       I N I T
@@ -26,9 +48,25 @@ abstract contract EditionsExtension {
 
     /**
      * @param editionsPerToken_ The total number of editions per base token
+     * @param maxBaseTokenId_ The total number of base tokens available
      */
-    constructor(uint256 editionsPerToken_) {
+    constructor(uint256 editionsPerToken_, uint256 maxBaseTokenId_) {
         _editionsPerToken = editionsPerToken_;
+        _maxBaseTokenId = maxBaseTokenId_;
+    }
+
+    /* ------------------------------------------------------------------------
+                          C O L L E C T   E D I T I O N S
+    ------------------------------------------------------------------------ */
+
+    /**
+     * @notice Mark the next edition of a base token ID as collected
+     * @dev To prevent editions being collected more than once, you'll have to add
+     * your own checks when collecting, usually using `onlyWhenEditionsAvailable()`.
+     * @param baseId The base token id that was collected
+     */
+    function _collectEdition(uint256 baseId) internal {
+        _editionsCollectedForBaseId[baseId]++;
     }
 
     /* ------------------------------------------------------------------------
@@ -103,7 +141,7 @@ abstract contract EditionsExtension {
         returns (uint256 baseId, uint256 editionNumber)
     {
         // Revert if using zero as a token id
-        if (id == 0) revert InvalidId();
+        if (id == 0) revert InvalidTokenId();
 
         // Save on multiple SLOADs
         uint256 editionsPerToken = _editionsPerToken;
@@ -150,7 +188,8 @@ abstract contract EditionsExtension {
         returns (uint256 id)
     {
         // Revert if using zero as a token id
-        if (baseId == 0 || editionNumber == 0) revert InvalidId();
+        if (baseId == 0) revert InvalidBaseId();
+        if (editionNumber == 0) revert InvalidEditionNumber();
 
         // Save on multiple SLOADs
         uint256 editionsPerToken = _editionsPerToken;
