@@ -3,10 +3,10 @@ pragma solidity ^0.8.15;
 
 /**
  * @author Sam King (samkingstudio.eth) for Fount Gallery
- * @title ERC-721 editions extension
+ * @title ERC-721 based editions extension
  * @notice Adds support for edition based token ids for ERC-721 contracts
  */
-abstract contract ERC721EditionsExtension {
+abstract contract EditionsExtension {
     /* ------------------------------------------------------------------------
                                    S T O R A G E
     ------------------------------------------------------------------------ */

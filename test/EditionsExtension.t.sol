@@ -3,12 +3,12 @@ pragma solidity ^0.8.15;
 
 import "forge-std/Test.sol";
 import "solmate/tokens/ERC721.sol";
-import "../src/extensions/ERC721EditionsExtension.sol";
+import "../src/extensions/EditionsExtension.sol";
 
-contract MockNFT is ERC721, ERC721EditionsExtension {
+contract MockNFT is ERC721, EditionsExtension {
     constructor(uint256 editionsPerToken_)
         ERC721("Mock NFT", "NFT")
-        ERC721EditionsExtension(editionsPerToken_)
+        EditionsExtension(editionsPerToken_)
     {}
 
     function tokenURI(uint256) public pure override returns (string memory) {
@@ -28,7 +28,7 @@ contract ERC721EditionsExtensionTest is Test {
     }
 
     function testTokenIdToBaseId() public {
-        vm.expectRevert(ERC721EditionsExtension.InvalidId.selector);
+        vm.expectRevert(EditionsExtension.InvalidId.selector);
         nft.tokenIdToBaseId(0);
 
         assertEq(nft.tokenIdToBaseId(1), 1);
@@ -45,7 +45,7 @@ contract ERC721EditionsExtensionTest is Test {
     }
 
     function testTokenIdToEditionNumber() public {
-        vm.expectRevert(ERC721EditionsExtension.InvalidId.selector);
+        vm.expectRevert(EditionsExtension.InvalidId.selector);
         nft.tokenIdToEditionNumber(0);
 
         assertEq(nft.tokenIdToEditionNumber(1), 1);
@@ -62,7 +62,7 @@ contract ERC721EditionsExtensionTest is Test {
     }
 
     function testTokenIdToEditionInfo() public {
-        vm.expectRevert(ERC721EditionsExtension.InvalidId.selector);
+        vm.expectRevert(EditionsExtension.InvalidId.selector);
         nft.tokenIdToEditionInfo(0);
 
         for (uint256 i = 1; i <= 12; i++) {
@@ -78,10 +78,10 @@ contract ERC721EditionsExtensionTest is Test {
     }
 
     function testEditionInfoTokTokenId() public {
-        vm.expectRevert(ERC721EditionsExtension.InvalidId.selector);
+        vm.expectRevert(EditionsExtension.InvalidId.selector);
         nft.editionInfoToTokenId(0, 1);
 
-        vm.expectRevert(ERC721EditionsExtension.InvalidId.selector);
+        vm.expectRevert(EditionsExtension.InvalidId.selector);
         nft.editionInfoToTokenId(1, 0);
 
         assertEq(nft.editionInfoToTokenId(1, 1), 1);
