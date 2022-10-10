@@ -76,4 +76,24 @@ contract ERC721EditionsExtensionTest is Test {
             assertEq(editionNumber, expectedEditionNumber);
         }
     }
+
+    function testEditionInfoTokTokenId() public {
+        vm.expectRevert(ERC721EditionsExtension.InvalidId.selector);
+        nft.editionInfoToTokenId(0, 1);
+
+        vm.expectRevert(ERC721EditionsExtension.InvalidId.selector);
+        nft.editionInfoToTokenId(1, 0);
+
+        assertEq(nft.editionInfoToTokenId(1, 1), 1);
+        assertEq(nft.editionInfoToTokenId(1, 2), 2);
+        assertEq(nft.editionInfoToTokenId(1, 3), 3);
+        assertEq(nft.editionInfoToTokenId(1, 4), 4);
+        assertEq(nft.editionInfoToTokenId(1, 5), 5);
+        assertEq(nft.editionInfoToTokenId(2, 1), 6);
+        assertEq(nft.editionInfoToTokenId(2, 2), 7);
+        assertEq(nft.editionInfoToTokenId(2, 3), 8);
+        assertEq(nft.editionInfoToTokenId(2, 4), 9);
+        assertEq(nft.editionInfoToTokenId(2, 5), 10);
+        assertEq(nft.editionInfoToTokenId(3, 1), 11);
+    }
 }

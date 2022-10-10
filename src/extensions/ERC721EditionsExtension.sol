@@ -114,4 +114,49 @@ abstract contract ERC721EditionsExtension {
             editionNumber = remainder == 0 ? editionsPerToken : remainder;
         }
     }
+
+    /**
+     * @notice Converts edition information into a standard token ID.
+     * For example, if editions per token is 5, then:
+     *   `baseId`        = 2
+     *   `editionNumber` = 3
+     *   `id`            = 8
+     *
+     * @param baseId The base token id of `id`
+     * @param editionNumber The edition number of `id`
+     * @return id The standard token id to convert
+     */
+    function editionInfoToTokenId(uint256 baseId, uint256 editionNumber)
+        public
+        view
+        virtual
+        returns (uint256 id)
+    {
+        return _editionInfoToTokenId(baseId, editionNumber);
+    }
+
+    /**
+     * @dev Internal function to convert edition information into a token ID.
+     * Reverts if `baseId` or `editionNumber` is zero since this assumes token ids and
+     * editions start at 1.
+     *
+     * @param baseId The base token id of `id`
+     * @param editionNumber The edition number of `id`
+     * @return id The standard token id to convert
+     */
+    function _editionInfoToTokenId(uint256 baseId, uint256 editionNumber)
+        internal
+        view
+        returns (uint256 id)
+    {
+        // Revert if using zero as a token id
+        if (baseId == 0 || editionNumber == 0) revert InvalidId();
+
+        // Save on multiple SLOADs
+        uint256 editionsPerToken = _editionsPerToken;
+
+        unchecked {
+            id = ((baseId - 1) * editionsPerToken) + editionNumber;
+        }
+    }
 }
