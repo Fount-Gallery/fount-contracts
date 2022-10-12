@@ -236,6 +236,13 @@ contract AuctionTest is Test {
         assertEq(auction.auctionHasEnded(id), true);
     }
 
+    function testCannotPlaceBidIfAuctionDoesNotExist() public {
+        uint256 id = 1;
+        vm.prank(bidderA);
+        vm.expectRevert(Auction.AuctionNotStarted.selector);
+        auction.placeBid{value: reservePrice}(id);
+    }
+
     function testCannotPlaceBidIfAuctionNotStarted() public {
         uint256 id = 1;
         uint256 startTime = block.timestamp + 10 minutes;

@@ -162,7 +162,9 @@ abstract contract Auction {
         AuctionData storage auction = auctionForTokenId[id];
 
         // Check auction is ready to accept bids
-        if (auction.startTime > block.timestamp) revert AuctionNotStarted();
+        if (auction.startTime == 0 || auction.startTime > block.timestamp) {
+            revert AuctionNotStarted();
+        }
 
         // If first bid, start the auction
         if (auction.firstBidTime == 0) {
