@@ -16,8 +16,8 @@ abstract contract ERC721Premint is ERC721 {
     /// @dev Current total supply (set to _maxTokenId on init)
     uint256 internal _totalSupply;
 
-    /// @dev The account where tokens are preminted to
-    address internal _premintTo;
+    /// @notice The account where tokens are preminted to
+    address public minter;
 
     /// @dev Keep track of burned token IDs
     mapping(uint256 => bool) internal _burnedTokenIds;
@@ -44,7 +44,7 @@ abstract contract ERC721Premint is ERC721 {
         address premintTo_,
         uint256 maxSupply_
     ) ERC721(name_, symbol_) {
-        _premintTo = premintTo_;
+        minter = premintTo_;
         _maxTokenId = maxSupply_;
         _totalSupply = maxSupply_;
 
@@ -75,7 +75,7 @@ abstract contract ERC721Premint is ERC721 {
         require(!_burnedTokenIds[id], "NOT_MINTED");
 
         address owner = _ownerOf[id];
-        return owner == address(0) ? _premintTo : owner;
+        return owner == address(0) ? minter : owner;
     }
 
     /**
