@@ -259,12 +259,19 @@ abstract contract Auction {
 
     function auctionHasEnded(uint256 id) external view returns (bool) {
         AuctionData memory auction = auctionForTokenId[id];
-        return block.timestamp > auction.firstBidTime + auction.duration;
+        bool hasStarted = auctionForTokenId[id].firstBidTime > 0;
+        return hasStarted && block.timestamp > auction.firstBidTime + auction.duration;
     }
 
     function auctionEndTime(uint256 id) external view returns (uint256) {
         AuctionData memory auction = auctionForTokenId[id];
-        return auction.startTime + auction.duration;
+        bool hasStarted = auctionForTokenId[id].firstBidTime > 0;
+        return hasStarted ? auction.startTime + auction.duration : 0;
+    }
+
+    function auctionDuration(uint256 id) external view returns (uint256) {
+        AuctionData memory auction = auctionForTokenId[id];
+        return auction.duration > 0 ? auction.duration : auctionConfig.duration;
     }
 
     function auctionHighestBidder(uint256 id) external view returns (address) {

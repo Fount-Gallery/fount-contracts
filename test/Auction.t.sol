@@ -88,7 +88,8 @@ contract AuctionTest is Test {
         assertEq(auction.auctionHasStarted(id), false);
         assertEq(auction.auctionStartTime(id), startTime);
         assertEq(auction.auctionHasEnded(id), false);
-        assertEq(auction.auctionEndTime(id), startTime + duration);
+        assertEq(auction.auctionEndTime(id), 0);
+        assertEq(auction.auctionDuration(id), duration);
         assertEq(auction.auctionHighestBidder(id), address(0));
         assertEq(auction.auctionHighestBid(id), 0);
         assertEq(auction.auctionListingOwner(id), minter);
@@ -132,7 +133,8 @@ contract AuctionTest is Test {
         assertEq(auction.auctionHasStarted(id), false);
         assertEq(auction.auctionStartTime(id), startTime);
         assertEq(auction.auctionHasEnded(id), false);
-        assertEq(auction.auctionEndTime(id), startTime + duration);
+        assertEq(auction.auctionEndTime(id), 0);
+        assertEq(auction.auctionDuration(id), duration);
         assertEq(auction.auctionHighestBidder(id), address(0));
         assertEq(auction.auctionHighestBid(id), 0);
         assertEq(auction.auctionListingOwner(id), minter);
@@ -146,8 +148,9 @@ contract AuctionTest is Test {
 
         assertEq(auction.auctionHasStarted(id), false);
         assertEq(auction.auctionStartTime(id), 0);
-        assertEq(auction.auctionHasEnded(id), true);
+        assertEq(auction.auctionHasEnded(id), false);
         assertEq(auction.auctionEndTime(id), 0);
+        assertEq(auction.auctionDuration(id), duration);
         assertEq(auction.auctionHighestBidder(id), address(0));
         assertEq(auction.auctionHighestBid(id), 0);
         assertEq(auction.auctionListingOwner(id), address(0));
@@ -188,6 +191,7 @@ contract AuctionTest is Test {
         assertEq(auction.auctionStartTime(id), startTime);
         assertEq(auction.auctionHasEnded(id), false);
         assertEq(auction.auctionEndTime(id), startTime + duration);
+        assertEq(auction.auctionDuration(id), duration);
         assertEq(auction.auctionHighestBidder(id), bidderA);
         assertEq(auction.auctionHighestBid(id), bidderAPrice);
 
@@ -231,6 +235,7 @@ contract AuctionTest is Test {
          * 15 mins time buffer - 5 mins before end = 10 min extension
          */
         assertEq(auction.auctionEndTime(id), extendedAt + timeBuffer);
+        assertEq(auction.auctionDuration(id), (extendedAt + timeBuffer) - startTime);
 
         vm.warp(extendedAt + timeBuffer + 1);
         assertEq(auction.auctionHasEnded(id), true);
