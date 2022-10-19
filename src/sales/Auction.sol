@@ -54,6 +54,7 @@ abstract contract Auction {
     error AuctionNotOver();
     error AuctionRefundFailed();
     error AuctionEnded();
+    error AuctionAlreadySettled();
 
     /* ------------------------------------------------------------------------
                                     E V E N T S
@@ -232,6 +233,9 @@ abstract contract Auction {
 
         // Check auction has ended
         if (auction.firstBidTime + auction.duration > block.timestamp) revert AuctionNotOver();
+
+        // Check if this contract still has the NFT indicating it has not been settled
+        if (nft.ownerOf(id) != address(this)) revert AuctionAlreadySettled();
 
         // Transfer NFT to highest bidder
         nft.transferFrom(address(this), auction.highestBidder, id);

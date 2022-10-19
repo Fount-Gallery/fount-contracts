@@ -338,6 +338,28 @@ contract AuctionTest is Test {
         assertEq(nft.ownerOf(id), bidderA);
     }
 
+    function testCannotSettleAuctionMoreThanOnce() public {
+        uint256 id = 1;
+        uint256 startTime = block.timestamp + 10 minutes;
+        auction.createAuction(id, startTime);
+        vm.warp(startTime);
+
+        assertEq(nft.balanceOf(bidderA), 0);
+
+        vm.prank(bidderA);
+        auction.placeBid{value: reservePrice}(id);
+
+        vm.warp(startTime + duration + 1);
+        assertEq(auction.auctionHasEnded(id), true);
+
+        vm.prank(bidderA);
+        auction.settleAuction(id);
+
+        vm.prank(bidderA);
+        vm.expectRevert(Auction.AuctionAlreadySettled.selector);
+        auction.settleAuction(id);
+    }
+
     function testCannotSettleAuctionThatHasNotStarted() public {
         uint256 id = 1;
         uint256 startTime = block.timestamp + 10 minutes;
