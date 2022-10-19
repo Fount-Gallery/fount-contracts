@@ -236,8 +236,7 @@ abstract contract Auction {
         // Transfer NFT to highest bidder
         nft.transferFrom(address(this), auction.highestBidder, id);
 
-        // Clean up the auction
-        delete auctionForTokenId[id];
+        // Decrease the active auction count
         unchecked {
             --_activeAuctionCount;
         }

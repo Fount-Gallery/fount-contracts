@@ -324,13 +324,6 @@ contract AuctionTest is Test {
         auction.settleAuction(id);
 
         // Should clean up auction
-        assertEq(auction.auctionHasStarted(id), false);
-        assertEq(auction.auctionStartTime(id), 0);
-        assertEq(auction.auctionHasEnded(id), true);
-        assertEq(auction.auctionEndTime(id), 0);
-        assertEq(auction.auctionHighestBidder(id), address(0));
-        assertEq(auction.auctionHighestBid(id), 0);
-        assertEq(auction.auctionListingOwner(id), address(0));
         assertEq(auction.totalActiveAuctions(), 0);
 
         // Should transfer the nft to the highest bidder
