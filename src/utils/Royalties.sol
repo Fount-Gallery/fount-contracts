@@ -20,7 +20,7 @@ abstract contract Royalties is IERC2981 {
     }
 
     /// @dev The current royalty information
-    RoyaltyInfo private _royaltyInfo;
+    RoyaltyInfo internal _royaltyInfo;
 
     /// @dev Interface id for the royalty information standard
     /// bytes4(keccak256("royaltyInfo(uint256,uint256)")) == 0x2a55205a

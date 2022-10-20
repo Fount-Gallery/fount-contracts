@@ -18,7 +18,7 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
      * @notice Contracts that have approval to operate for a given batch
      * @dev Batch number => operator contract address
      */
-    mapping(uint256 => address) public operatorForBatch;
+    mapping(uint256 => address) internal _operatorForBatch;
 
     /* ------------------------------------------------------------------------
                                     E R R O R S
@@ -45,7 +45,7 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
      * @dev Modifier that only allows the operator for the currently active batch
      */
     modifier onlyWhenOperatorForActiveBatch() {
-        if (operatorForBatch[activeBatch] != msg.sender) revert NotOperatorForBatch();
+        if (_operatorForBatch[_activeBatch] != msg.sender) revert NotOperatorForBatch();
         _;
     }
 
@@ -53,7 +53,7 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
      * @dev Modifier that only allows the operator for a specific batch
      */
     modifier onlyWhenOperatorForBatch(uint256 batch) {
-        if (operatorForBatch[batch] != msg.sender) revert NotOperatorForBatch();
+        if (_operatorForBatch[batch] != msg.sender) revert NotOperatorForBatch();
         _;
     }
 
@@ -81,7 +81,7 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
      */
     function _setBatchOperator(uint256 batch, address operator) internal {
         if (batch > (_totalTokens / _batchSize) || batch < 1) revert InvalidBatch();
-        operatorForBatch[batch] = operator;
+        _operatorForBatch[batch] = operator;
         emit BatchOperatorSet(batch, operator);
     }
 

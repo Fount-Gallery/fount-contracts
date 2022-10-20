@@ -81,6 +81,10 @@ contract MockNFT is ERC721, BatchedReleaseExtension {
     function getBatchForTokenId(uint256 id) public view returns (uint256) {
         return _getBatchFromId(id);
     }
+
+    function activeBatch() public view returns (uint256) {
+        return _activeBatch;
+    }
 }
 
 contract BatchedReleaseExtensionTest is Test {

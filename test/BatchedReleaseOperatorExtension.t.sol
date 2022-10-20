@@ -57,6 +57,14 @@ contract MockNFT is IMockNFT, ERC721, BatchedReleaseOperatorExtension {
         return _getBatchFromId(id);
     }
 
+    function activeBatch() public view returns (uint256) {
+        return _activeBatch;
+    }
+
+    function operatorForBatch(uint256 batch) public view returns (address) {
+        return _operatorForBatch[batch];
+    }
+
     function setBatchOperator(uint256 batch, address operator) public override {
         _setBatchOperator(batch, operator);
     }

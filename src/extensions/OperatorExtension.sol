@@ -16,7 +16,7 @@ abstract contract OperatorExtension {
      * @notice Contracts that have approval to operate on the base contract
      * @dev Operator contract address => approved
      */
-    mapping(address => bool) public operators;
+    mapping(address => bool) internal _operators;
 
     /* ------------------------------------------------------------------------
                                     E R R O R S
@@ -48,7 +48,7 @@ abstract contract OperatorExtension {
      * @dev Modifier that only allows an operator to call
      */
     modifier onlyWhenOperator() {
-        if (!operators[msg.sender]) revert NotOperator();
+        if (!_operators[msg.sender]) revert NotOperator();
         _;
     }
 
@@ -62,7 +62,7 @@ abstract contract OperatorExtension {
      * @param operator The operator contract address to add
      */
     function _addOperator(address operator) internal {
-        operators[operator] = true;
+        _operators[operator] = true;
         emit OperatorAdded(operator);
     }
 
@@ -78,7 +78,7 @@ abstract contract OperatorExtension {
      * @param operator The operator contract address to remove
      */
     function _removeOperator(address operator) internal {
-        operators[operator] = false;
+        _operators[operator] = false;
         emit OperatorRemoved(operator);
     }
 

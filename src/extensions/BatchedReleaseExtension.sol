@@ -24,7 +24,7 @@ abstract contract BatchedReleaseExtension {
      * @notice The current active batch number
      * @dev Batch numbers are 0-`_batchSize` where 0 is "off"
      */
-    uint256 public activeBatch;
+    uint256 internal _activeBatch;
 
     /* ------------------------------------------------------------------------
                                     E R R O R S
@@ -55,7 +55,7 @@ abstract contract BatchedReleaseExtension {
      * @dev Modifier that reverts if the batch specified is not active
      */
     modifier onlyWhenActiveBatchIs(uint256 batch) {
-        if (activeBatch != batch) revert NotActiveBatch();
+        if (_activeBatch != batch) revert NotActiveBatch();
         _;
     }
 
@@ -71,7 +71,7 @@ abstract contract BatchedReleaseExtension {
      * @dev Modifier that reverts if the token is not in the active batch
      */
     modifier onlyWhenTokenIsInActiveBatch(uint256 id) {
-        if (_getBatchFromId(id) != activeBatch) revert TokenNotInActiveBatch();
+        if (_getBatchFromId(id) != _activeBatch) revert TokenNotInActiveBatch();
         _;
     }
 
@@ -141,17 +141,17 @@ abstract contract BatchedReleaseExtension {
         uint256 nextBatch = (totalCollected() / _batchSize) + 1;
 
         // Check if the batch can be advanced
-        if (activeBatch >= nextBatch || nextBatch > (_totalTokens / _batchSize)) {
+        if (_activeBatch >= nextBatch || nextBatch > (_totalTokens / _batchSize)) {
             revert CannotGoToNextBatch();
         }
 
         // Increment to go to the next batch
         unchecked {
-            ++activeBatch;
+            ++_activeBatch;
         }
 
         // Emit a batch updated event
-        emit ActiveBatchSet(activeBatch, false);
+        emit ActiveBatchSet(_activeBatch, false);
     }
 
     /// @dev Force implementation of `goToNextBatch`
@@ -170,10 +170,10 @@ abstract contract BatchedReleaseExtension {
         if (batch > (_totalTokens / _batchSize)) revert InvalidBatch();
 
         // Set the active branch to the one specified
-        activeBatch = batch;
+        _activeBatch = batch;
 
         // Emit a batch updated event
-        emit ActiveBatchSet(activeBatch, true);
+        emit ActiveBatchSet(_activeBatch, true);
     }
 
     /* ------------------------------------------------------------------------

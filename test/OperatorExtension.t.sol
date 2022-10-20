@@ -31,6 +31,10 @@ contract MockNFT is IMockNFT, ERC721, OperatorExtension {
     function removeOperator(address operator) public override {
         _removeOperator(operator);
     }
+
+    function operators(address operator) public view returns (bool) {
+        return _operators[operator];
+    }
 }
 
 contract MockOperator {
