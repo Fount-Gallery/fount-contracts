@@ -99,4 +99,18 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
         address operator,
         bool approved
     ) public virtual;
+
+    /* ------------------------------------------------------------------------
+                                   G E T T E R S
+    ------------------------------------------------------------------------ */
+
+    /**
+     * @notice Checks if an operator is approved for a given batch
+     * @param operator The operator address
+     * @param batch The batch number
+     * @return isOperator If the operator is approved for the batch
+     */
+    function isOperatorForBatch(address operator, uint256 batch) external view returns (bool) {
+        return _operatorsForBatch[batch][operator];
+    }
 }
