@@ -61,12 +61,16 @@ contract MockNFT is IMockNFT, ERC721, BatchedReleaseOperatorExtension {
         return _activeBatch;
     }
 
-    function operatorForBatch(uint256 batch) public view returns (address) {
-        return _operatorForBatch[batch];
+    function isBatchOperator(uint256 batch, address operator) public view returns (bool) {
+        return _operatorsForBatch[batch][operator];
     }
 
-    function setBatchOperator(uint256 batch, address operator) public override {
-        _setBatchOperator(batch, operator);
+    function setBatchOperator(
+        uint256 batch,
+        address operator,
+        bool approved
+    ) public override {
+        _setBatchOperator(batch, operator, approved);
     }
 }
 
@@ -125,8 +129,8 @@ contract BatchedReleaseOperatorExtensionTest is Test {
         operator.doSomethingForActiveBatch();
 
         // Set the operator on the nft contract
-        nft.setBatchOperator(1, address(operator));
-        assertEq(nft.operatorForBatch(1), address(operator));
+        nft.setBatchOperator(1, address(operator), true);
+        assertEq(nft.isBatchOperator(1, address(operator)), true);
 
         // Calling an operator only function directly on the nft contract should still revert
         vm.expectRevert(BatchedReleaseOperatorExtension.NotOperatorForBatch.selector);
@@ -174,8 +178,8 @@ contract BatchedReleaseOperatorExtensionTest is Test {
         operator.doSomethingForBatch(1);
 
         // Set the operator on the nft contract
-        nft.setBatchOperator(1, address(operator));
-        assertEq(nft.operatorForBatch(1), address(operator));
+        nft.setBatchOperator(1, address(operator), true);
+        assertEq(nft.isBatchOperator(1, address(operator)), true);
 
         // Calling an operator only function directly on the nft contract should still revert
         vm.expectRevert(BatchedReleaseOperatorExtension.NotOperatorForBatch.selector);
@@ -198,18 +202,17 @@ contract BatchedReleaseOperatorExtensionTest is Test {
     }
 
     function testSetBatchOperator() public {
-        assertEq(nft.operatorForBatch(1), address(0));
-        nft.setBatchOperator(1, address(operator));
-        assertEq(nft.operatorForBatch(1), address(operator));
+        nft.setBatchOperator(1, address(operator), true);
+        assertEq(nft.isBatchOperator(1, address(operator)), true);
     }
 
     function testCannotSetBatchOperatorForInvalidBatch() public {
         vm.expectRevert(BatchedReleaseExtension.InvalidBatch.selector);
-        nft.setBatchOperator(0, address(operator));
-        assertEq(nft.operatorForBatch(0), address(0));
+        nft.setBatchOperator(0, address(operator), true);
+        assertEq(nft.isBatchOperator(0, address(operator)), false);
 
         vm.expectRevert(BatchedReleaseExtension.InvalidBatch.selector);
-        nft.setBatchOperator(4, address(operator));
-        assertEq(nft.operatorForBatch(4), address(0));
+        nft.setBatchOperator(4, address(operator), true);
+        assertEq(nft.isBatchOperator(4, address(operator)), false);
     }
 }

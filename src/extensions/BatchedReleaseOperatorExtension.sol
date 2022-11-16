@@ -18,7 +18,7 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
      * @notice Contracts that have approval to operate for a given batch
      * @dev Batch number => operator contract address
      */
-    mapping(uint256 => address) internal _operatorForBatch;
+    mapping(uint256 => mapping(address => bool)) internal _operatorsForBatch;
 
     /* ------------------------------------------------------------------------
                                     E R R O R S
@@ -45,7 +45,7 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
      * @dev Modifier that only allows the operator for the currently active batch
      */
     modifier onlyWhenOperatorForActiveBatch() {
-        if (_operatorForBatch[_activeBatch] != msg.sender) revert NotOperatorForBatch();
+        if (!_operatorsForBatch[_activeBatch][msg.sender]) revert NotOperatorForBatch();
         _;
     }
 
@@ -53,7 +53,7 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
      * @dev Modifier that only allows the operator for a specific batch
      */
     modifier onlyWhenOperatorForBatch(uint256 batch) {
-        if (_operatorForBatch[batch] != msg.sender) revert NotOperatorForBatch();
+        if (!_operatorsForBatch[batch][msg.sender]) revert NotOperatorForBatch();
         _;
     }
 
@@ -78,10 +78,15 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
      * Reverts if the batch isn't between 1-`_numOfBatches`.
      * @param batch The batch to set the operator for
      * @param operator The operator contract that get's approval to all the minters tokens
+     * @param approved If the operator is approved for the batch or not
      */
-    function _setBatchOperator(uint256 batch, address operator) internal {
+    function _setBatchOperator(
+        uint256 batch,
+        address operator,
+        bool approved
+    ) internal {
         if (batch > (_totalTokens / _batchSize) || batch < 1) revert InvalidBatch();
-        _operatorForBatch[batch] = operator;
+        _operatorsForBatch[batch][operator] = approved;
         emit BatchOperatorSet(batch, operator);
     }
 
@@ -89,5 +94,9 @@ abstract contract BatchedReleaseOperatorExtension is BatchedReleaseExtension {
      * @dev Force implementation of `setBatchOperator`.
      * Can be overriden to pre-approve token transfers using `isApprovedForAll` for example.
      */
-    function setBatchOperator(uint256 batch, address operator) public virtual;
+    function setBatchOperator(
+        uint256 batch,
+        address operator,
+        bool approved
+    ) public virtual;
 }
