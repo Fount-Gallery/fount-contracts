@@ -31,14 +31,9 @@ abstract contract OperatorExtension {
     /**
      * @dev When an operator is added
      * @param operator The operator address
+     * @param approved If the operator is approved or not
      */
-    event OperatorAdded(address indexed operator);
-
-    /**
-     * @dev When an operator is removed
-     * @param operator The operator address
-     */
-    event OperatorRemoved(address indexed operator);
+    event OperatorSet(address indexed operator, bool indexed approved);
 
     /* ------------------------------------------------------------------------
                                  M O D I F I E R S
@@ -57,33 +52,32 @@ abstract contract OperatorExtension {
     ------------------------------------------------------------------------ */
 
     /**
-     * @notice Adds an operator
-     * @dev Allows the use of the `onlyWhenOperator()` modifier.
-     * @param operator The operator contract address to add
+     * @notice Sets an operator
+     * @dev Allows the use of the `onlyWhenOperator()` modifier if approved.
+     * @param operator The operator contract address to set
+     * @param approved If the operator is approved or not
      */
-    function _addOperator(address operator) internal {
-        _operators[operator] = true;
-        emit OperatorAdded(operator);
+    function _setOperator(address operator, bool approved) internal {
+        _operators[operator] = approved;
+        emit OperatorSet(operator, approved);
     }
 
     /**
-     * @dev Force implementation of `addOperator`.
+     * @dev Force implementation of `setOperator`.
      * Can be overriden to pre-approve token transfers using `isApprovedForAll` for example.
      */
-    function addOperator(address operator) public virtual;
+    function setOperator(address operator, bool approved) public virtual;
+
+    /* ------------------------------------------------------------------------
+                                   G E T T E R S
+    ------------------------------------------------------------------------ */
 
     /**
-     * @notice Removes an operator
-     * @dev Removes the use of the `onlyWhenOperator()` modifier for the operator
-     * @param operator The operator contract address to remove
+     * @notice Checks if an address is an approved operator
+     * @param operator The operator address
+     * @return isOperator If the address is an approved operator
      */
-    function _removeOperator(address operator) internal {
-        _operators[operator] = false;
-        emit OperatorRemoved(operator);
+    function isOperator(address operator) external view returns (bool) {
+        return _operators[operator];
     }
-
-    /**
-     * @dev Force implementation of `removeOperator`.
-     */
-    function removeOperator(address operator) public virtual;
 }
