@@ -24,12 +24,16 @@ contract MockNFT is IMockNFT, ERC721, OperatorExtension {
         return "ipfs://<baseHash>/1";
     }
 
-    function addOperator(address operator) public override {
-        _addOperator(operator);
+    function addOperator(address operator) public {
+        _setOperator(operator, true);
     }
 
-    function removeOperator(address operator) public override {
-        _removeOperator(operator);
+    function removeOperator(address operator) public {
+        _setOperator(operator, false);
+    }
+
+    function setOperator(address operator, bool approved) public override {
+        _setOperator(operator, approved);
     }
 
     function operators(address operator) public view returns (bool) {
