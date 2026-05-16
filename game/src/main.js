@@ -40,8 +40,8 @@ composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
 function resize() {
-  const w = canvas.clientWidth = window.innerWidth;
-  const h = canvas.clientHeight = window.innerHeight;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
   renderer.setSize(w, h, false);
   composer.setSize(w, h);
   camera.aspect = w / h;
