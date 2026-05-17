@@ -92,10 +92,12 @@ export function createStriker(scene) {
   sockL.castShadow = sockR.castShadow = true;
   group.add(sockL, sockR);
 
-  // Position: slightly left of the ball, back to camera, taller than ball.
-  // The kicker stands behind & beside the spot so the goal stays visible.
-  group.position.set(-0.6, 0, 1.4);
-  group.rotation.y = Math.PI + 0.05;  // back to camera, slight rotation toward ball
+  // Position: slightly off-center, back to camera. The goal stays visible
+  // over the striker's right shoulder. Scaled down a touch so they read
+  // as a foreground element, not a wall.
+  group.position.set(-0.25, 0, 1.7);
+  group.rotation.y = Math.PI - 0.04;
+  group.scale.setScalar(0.95);
   scene.add(group);
 
   return {
@@ -111,7 +113,7 @@ export function updateStriker(striker, time) {
   striker.head.position.y = 1.65 + Math.sin(t) * 0.012;
   striker.armL.rotation.z = 0.06 + Math.sin(t * 0.9) * 0.04;
   striker.armR.rotation.z = -0.06 - Math.sin(t * 0.9) * 0.04;
-  striker.group.position.x = -0.6 + Math.sin(t * 0.4) * 0.015;
+  striker.group.position.x = -0.25 + Math.sin(t * 0.4) * 0.012;
 }
 
 function makeNumberTexture(text) {

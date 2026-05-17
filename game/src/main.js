@@ -26,10 +26,12 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const { scene, goalGroup } = createScene();
 
-// Camera — behind the striker, framing ball + goal
-const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 120);
-const CAM_HOME = new THREE.Vector3(0.15, 1.75, 3.2);
-const CAM_LOOK = new THREE.Vector3(0, 1.25, GOAL.z);
+// Camera — behind & slightly right of the striker so the goal is visible
+// over his right shoulder. Vertical FOV ~58° to fit the foreground figure
+// on portrait mobile while keeping the goal a sensible size.
+const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 140);
+const CAM_HOME = new THREE.Vector3(0.35, 1.95, 3.4);
+const CAM_LOOK = new THREE.Vector3(0.05, 1.1, GOAL.z);
 camera.position.copy(CAM_HOME);
 camera.lookAt(CAM_LOOK);
 
