@@ -1,18 +1,22 @@
 import * as THREE from 'three';
 import { GOAL } from './scene.js';
 
-const SKIN = 0xffd2a8;
-const SHIRT = 0x16d56b;
-const SHORTS = 0x0b3320;
-const GLOVE = 0xffeb55;
+const SKIN = 0xf1c79a;
+const SHIRT = 0x2a5cff;
+const SHIRT_TRIM = 0x9bd1ff;
+const SHORTS = 0xf4f7ff;
+const SOCKS = 0x0a1330;
+const GLOVE = 0xffd24a;
 
 export function createKeeper(scene) {
   const group = new THREE.Group();
 
-  const matSkin = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.8 });
-  const matShirt = new THREE.MeshStandardMaterial({ color: SHIRT, roughness: 0.7, emissive: 0x062a14 });
+  const matSkin = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.85 });
+  const matShirt = new THREE.MeshStandardMaterial({ color: SHIRT, roughness: 0.65, emissive: 0x0a1a4c });
   const matShorts = new THREE.MeshStandardMaterial({ color: SHORTS, roughness: 0.8 });
-  const matGlove = new THREE.MeshStandardMaterial({ color: GLOVE, roughness: 0.6, emissive: 0x3a2a00 });
+  const matSocks = new THREE.MeshStandardMaterial({ color: SOCKS, roughness: 0.85 });
+  const matGlove = new THREE.MeshStandardMaterial({ color: GLOVE, roughness: 0.55, emissive: 0x4a3500 });
+  const matTrim = new THREE.MeshStandardMaterial({ color: SHIRT_TRIM, roughness: 0.65 });
 
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.5, 6, 12), matShirt);
   body.position.y = 1.0;
@@ -41,14 +45,28 @@ export function createKeeper(scene) {
   gloveR.position.set(0.32, 0.75, 0);
   group.add(gloveL, gloveR);
 
-  // Legs
-  const legGeom = new THREE.CapsuleGeometry(0.1, 0.55, 4, 8);
-  const legL = new THREE.Mesh(legGeom, matShorts);
-  const legR = new THREE.Mesh(legGeom, matShorts);
-  legL.position.set(-0.14, 0.4, 0);
-  legR.position.set(0.14, 0.4, 0);
+  // Shorts (upper leg) and socks (lower leg)
+  const thighGeom = new THREE.CapsuleGeometry(0.11, 0.28, 4, 8);
+  const thighL = new THREE.Mesh(thighGeom, matShorts);
+  const thighR = new THREE.Mesh(thighGeom, matShorts);
+  thighL.position.set(-0.14, 0.55, 0);
+  thighR.position.set(0.14, 0.55, 0);
+  thighL.castShadow = thighR.castShadow = true;
+  group.add(thighL, thighR);
+
+  const sockGeom = new THREE.CapsuleGeometry(0.1, 0.28, 4, 8);
+  const legL = new THREE.Mesh(sockGeom, matSocks);
+  const legR = new THREE.Mesh(sockGeom, matSocks);
+  legL.position.set(-0.14, 0.22, 0);
+  legR.position.set(0.14, 0.22, 0);
   legL.castShadow = legR.castShadow = true;
   group.add(legL, legR);
+
+  // Chest trim stripe — diagonal band suggesting away kit pattern
+  const trim = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.4), matTrim);
+  trim.position.set(0, 1.15, 0.02);
+  trim.rotation.z = 0.25;
+  group.add(trim);
 
   group.position.set(0, 0, GOAL.z + 0.4);
   scene.add(group);

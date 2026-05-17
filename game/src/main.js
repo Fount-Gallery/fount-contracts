@@ -7,6 +7,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createScene, GOAL, BALL_START, BALL_RADIUS } from './scene.js';
 import { createBall } from './ball.js';
 import { createKeeper, dive, updateKeeper, keeperHitbox } from './keeper.js';
+import { createStriker, updateStriker } from './striker.js';
 import { createShot, stepBall, checkOutcome } from './physics.js';
 import { attachSwipe } from './input.js';
 import { createTrail, burst, createShaker, rippleNet, flash, toast } from './fx.js';
@@ -25,10 +26,10 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const { scene, goalGroup } = createScene();
 
-// Camera — slightly behind & above the penalty spot
-const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
-const CAM_HOME = new THREE.Vector3(0, 1.55, 2.6);
-const CAM_LOOK = new THREE.Vector3(0, 1.4, GOAL.z);
+// Camera — behind the striker, framing ball + goal
+const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 120);
+const CAM_HOME = new THREE.Vector3(0.15, 1.75, 3.2);
+const CAM_LOOK = new THREE.Vector3(0, 1.25, GOAL.z);
 camera.position.copy(CAM_HOME);
 camera.lookAt(CAM_LOOK);
 
@@ -54,6 +55,7 @@ window.addEventListener('resize', resize);
 // Entities
 const ball = createBall(scene);
 const keeper = createKeeper(scene);
+const striker = createStriker(scene);
 const trail = createTrail(scene);
 const shaker = createShaker(camera);
 
@@ -158,6 +160,7 @@ function loop() {
   const t = performance.now() / 1000;
 
   updateKeeper(keeper, t, rawDt);
+  updateStriker(striker, t);
 
   if (state === 'flying' && shot) {
     prevBallPos.copy(ball.mesh.position);
