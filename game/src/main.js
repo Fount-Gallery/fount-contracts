@@ -6,7 +6,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 import { createScene, GOAL, BALL_START, BALL_RADIUS } from './scene.js';
 import { createBall } from './ball.js';
-import { createKeeper, dive, updateKeeper, keeperHitbox } from './keeper.js';
+import { createKeeper, dive, updateKeeper, keeperHitbox, telegraph, clearTelegraph } from './keeper.js';
 import { createStriker, updateStriker } from './striker.js';
 import { createShot, stepBall, checkOutcome } from './physics.js';
 import { attachSwipe } from './input.js';
@@ -26,19 +26,15 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const { scene, goalGroup } = createScene();
 
-// Camera — behind & slightly right of the striker so the goal is visible
-// over his right shoulder. Vertical FOV ~58° to fit the foreground figure
-// on portrait mobile while keeping the goal a sensible size.
 const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 140);
 const CAM_HOME = new THREE.Vector3(0.35, 1.95, 3.4);
 const CAM_LOOK = new THREE.Vector3(0.05, 1.1, GOAL.z);
 camera.position.copy(CAM_HOME);
 camera.lookAt(CAM_LOOK);
 
-// Post-processing
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.65, 0.7, 0.85);
+const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.45, 0.7, 0.9);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
@@ -54,18 +50,15 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-// Entities
 const ball = createBall(scene);
 const keeper = createKeeper(scene);
 const striker = createStriker(scene);
 const trail = createTrail(scene);
 const shaker = createShaker(camera);
 
-// Active particle systems
 const particles = [];
 
-// Game state
-let state = 'menu'; // 'menu' | 'aim' | 'flying' | 'resolved'
+let state = 'menu';
 let shot = null;
 let prevBallPos = new THREE.Vector3();
 let slowmo = 1;
@@ -73,6 +66,27 @@ let run = null;
 let progress = loadProgress();
 let activeChallenge = null;
 let runEnding = false;
+let pendingGuess = { x: 0, y: 0.3 };  // keeper's committed guess for the next shot
+let resolvePoint = new THREE.Vector3();
+
+// Aim preview — dotted predicted trajectory shown while user is dragging.
+const PREVIEW_SAMPLES = 18;
+const previewDots = [];
+{
+  const dotGeom = new THREE.SphereGeometry(0.05, 8, 6);
+  const dotMat = new THREE.MeshBasicMaterial({
+    color: 0xffd24a,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+  });
+  for (let i = 0; i < PREVIEW_SAMPLES; i++) {
+    const d = new THREE.Mesh(dotGeom, dotMat);
+    d.visible = false;
+    scene.add(d);
+    previewDots.push(d);
+  }
+}
 
 const overlay = setupOverlay({
   progress,
@@ -80,9 +94,18 @@ const overlay = setupOverlay({
 });
 overlay.show();
 
-attachSwipe(canvas, ({ aimX, aimY, power, curve }) => {
-  if (state !== 'aim') return;
-  takeShot({ aimX, aimY, power, curve });
+attachSwipe(canvas, {
+  onShoot: (params) => {
+    if (state !== 'aim') return;
+    hidePreview();
+    takeShot(params);
+  },
+  onAim: (params) => {
+    if (state !== 'aim') return;
+    if (params) updatePreview(params);
+    else hidePreview();
+  },
+  onAimEnd: () => hidePreview(),
 });
 
 function beginChallenge(challenge) {
@@ -94,6 +117,7 @@ function beginChallenge(challenge) {
   setChallengeTitle(challenge.name);
   setScore(0, 0, challenge.shots);
   setHint(challenge.goal + ' — swipe up to shoot');
+  setUpKeeperGuess();
 }
 
 function resetBall() {
@@ -104,9 +128,50 @@ function resetBall() {
   trail.reset();
   slowmo = 1;
   shot = null;
-  // Reset keeper to home pose (state machine handles smoothing)
   keeper.diving = false;
   keeper.group.rotation.z = 0;
+}
+
+// Generate a guess for the keeper and telegraph it via lean. The strength of
+// the tell is inversely related to the keeper's `anticipation` — low-skill
+// keepers commit early & visibly, high-skill keepers wait and barely tell.
+function setUpKeeperGuess() {
+  const { anticipation } = activeChallenge.keeper;
+  // Random pre-commit guess in aim-space (-1..+1 x, 0..1 y)
+  pendingGuess = {
+    x: (Math.random() * 2 - 1) * 0.85,
+    y: 0.25 + Math.random() * 0.55,
+  };
+  const tellStrength = THREE.MathUtils.clamp(1 - anticipation, 0.2, 1);
+  telegraph(keeper, Math.sign(pendingGuess.x) || 0, tellStrength);
+}
+
+function updatePreview({ aimX, aimY, power, curve }) {
+  let finalPower = power;
+  if (activeChallenge?.maxPower) finalPower = Math.min(power, activeChallenge.maxPower);
+  const tentative = createShot({ power: finalPower, aimX, aimY, curve });
+  const dummy = {
+    position: BALL_START.clone(),
+    rotation: { x: 0, y: 0, z: 0 },
+  };
+  const totalTime = tentative.flightTime * 1.02;
+  const sampleDt = totalTime / PREVIEW_SAMPLES;
+  const subSteps = 4;
+  const subDt = sampleDt / subSteps;
+  for (let i = 0; i < PREVIEW_SAMPLES; i++) {
+    for (let s = 0; s < subSteps; s++) stepBall(dummy, tentative, subDt);
+    const d = previewDots[i];
+    d.position.copy(dummy.position);
+    d.visible = true;
+    // Fade further dots toward the end of the path
+    const tNorm = (i + 1) / PREVIEW_SAMPLES;
+    d.material.opacity = 0.95 - tNorm * 0.35;
+    d.scale.setScalar(1 - tNorm * 0.45);
+  }
+}
+
+function hidePreview() {
+  for (const d of previewDots) d.visible = false;
 }
 
 function takeShot({ aimX, aimY, power, curve }) {
@@ -120,32 +185,33 @@ function takeShot({ aimX, aimY, power, curve }) {
   setHint('', true);
   sfxKick();
 
-  // Grass kick puff
   particles.push(burst(scene, new THREE.Vector3(0, 0.05, 0), {
-    count: 24,
-    color: 0xb7d96e,
-    speed: 3,
-    size: 0.1,
-    life: 0.5,
-    spread: Math.PI / 2,
+    count: 24, color: 0xb7d96e, speed: 3, size: 0.1, life: 0.5, spread: Math.PI / 2,
   }));
   shaker.add(0.18);
 
-  // Schedule keeper dive based on challenge AI
   scheduleKeeperDive(aimX, aimY, finalPower, curve);
 }
 
 function scheduleKeeperDive(aimX, aimY, power, curve) {
   const { reaction, anticipation } = activeChallenge.keeper;
-  // anticipation: 0 = guess random, 1 = perfect read
-  const guessNoise = (1 - anticipation) * (Math.random() - 0.5) * 1.6;
-  const guessedAimX = aimX + guessNoise;
-  // High shots are tougher for keeper — reduce read on Y
-  const guessedAimY = aimY * (0.6 + anticipation * 0.4);
+  // Blend the pre-committed guess with the actual aim, weighted by
+  // anticipation. Smart keepers (high anticipation) read the player; dumb
+  // keepers (low anticipation) stick with their early guess.
+  const blend = anticipation;
+  const guessedAimX = pendingGuess.x * (1 - blend) + aimX * blend;
+  const guessedAimY = pendingGuess.y * (1 - blend) + aimY * blend;
 
-  // The dive target in world units
-  const targetX = THREE.MathUtils.clamp(guessedAimX * (GOAL.width * 0.65), -GOAL.width / 2 - 0.4, GOAL.width / 2 + 0.4);
-  const targetY = THREE.MathUtils.clamp(guessedAimY * GOAL.height, 0.1, GOAL.height - 0.1);
+  const targetX = THREE.MathUtils.clamp(
+    guessedAimX * (GOAL.width * 0.65),
+    -GOAL.width / 2 - 0.4,
+    GOAL.width / 2 + 0.4,
+  );
+  const targetY = THREE.MathUtils.clamp(
+    guessedAimY * GOAL.height,
+    0.1,
+    GOAL.height - 0.1,
+  );
 
   setTimeout(() => {
     if (state !== 'flying') return;
@@ -155,6 +221,10 @@ function scheduleKeeperDive(aimX, aimY, power, curve) {
 
 const clock = new THREE.Clock();
 let outcomeTime = 0;
+const RESOLVED_DURATION = 2.0;
+const ORBIT_PEAK = 1.0;  // seconds where camera is fully orbited
+const tmpCamPos = new THREE.Vector3();
+const tmpCamLook = new THREE.Vector3();
 
 function loop() {
   const rawDt = Math.min(clock.getDelta(), 0.05);
@@ -164,50 +234,72 @@ function loop() {
   updateKeeper(keeper, t, rawDt);
   updateStriker(striker, t);
 
+  let camPos = CAM_HOME;
+  let camLook = CAM_LOOK;
+
   if (state === 'flying' && shot) {
     prevBallPos.copy(ball.mesh.position);
     stepBall(ball.mesh, shot, dt);
-
-    // Trail
     trail.push(ball.mesh.position);
 
-    // Ground shadow follows ball, fades with altitude
     ball.shadow.position.x = ball.mesh.position.x;
     ball.shadow.position.z = ball.mesh.position.z;
     ball.shadow.material.opacity = Math.max(0.05, 0.45 - ball.mesh.position.y * 0.12);
 
-    // Trigger slow-mo as ball approaches goal
     if (ball.mesh.position.z < GOAL.z + 4 && ball.mesh.position.z > GOAL.z) {
       slowmo = Math.max(0.45, slowmo - rawDt * 1.2);
     }
 
-    // Camera: slight track of the ball
-    const camBase = CAM_HOME.clone();
-    camBase.x += ball.mesh.position.x * 0.05;
-    camBase.y += Math.max(0, ball.mesh.position.y - 0.5) * 0.04;
-    shaker.update(rawDt, camBase, CAM_LOOK);
+    tmpCamPos.copy(CAM_HOME);
+    tmpCamPos.x += ball.mesh.position.x * 0.05;
+    tmpCamPos.y += Math.max(0, ball.mesh.position.y - 0.5) * 0.04;
+    camPos = tmpCamPos;
 
     const result = checkOutcome(ball.mesh, prevBallPos, keeperHitbox(keeper));
-    if (result) {
-      resolveOutcome(result);
+    if (result) resolveOutcome(result);
+  } else if (state === 'resolved') {
+    // Slow-mo replay: orbit camera to a side angle that frames the
+    // outcome point, hold there, then ease back to home for the next shot.
+    const elapsed = (performance.now() / 1000) - outcomeTime;
+    const side = (resolvePoint.x >= 0) ? -1 : 1;
+    const orbitPos = tmpCamPos.set(side * 7.5, 1.5, GOAL.z + 3.5);
+
+    if (elapsed < ORBIT_PEAK) {
+      const k = THREE.MathUtils.smoothstep(elapsed, 0, ORBIT_PEAK);
+      tmpCamPos.copy(CAM_HOME).lerp(orbitPos, k);
+      tmpCamLook.copy(CAM_LOOK).lerp(resolvePoint, k);
+    } else if (elapsed < RESOLVED_DURATION) {
+      const k = THREE.MathUtils.smoothstep(
+        elapsed,
+        ORBIT_PEAK,
+        RESOLVED_DURATION,
+      );
+      tmpCamPos.copy(orbitPos).lerp(CAM_HOME, k);
+      tmpCamLook.copy(resolvePoint).lerp(CAM_LOOK, k);
+    } else {
+      tmpCamPos.copy(CAM_HOME);
+      tmpCamLook.copy(CAM_LOOK);
     }
-  } else {
-    shaker.update(rawDt, CAM_HOME, CAM_LOOK);
-  }
+    camPos = tmpCamPos;
+    camLook = tmpCamLook;
 
-  // Particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    if (particles[i].update(rawDt)) particles.splice(i, 1);
-  }
+    // Hold slow-mo while orbited, ease back as we return home
+    if (elapsed < ORBIT_PEAK + 0.4) {
+      slowmo = 0.4;
+    } else {
+      slowmo = Math.min(1, slowmo + rawDt * 0.7);
+    }
 
-  // After resolution, ease slow-mo back and reset shot
-  if (state === 'resolved') {
-    if (performance.now() / 1000 - outcomeTime > 1.6 && !runEnding) {
+    if (elapsed > RESOLVED_DURATION && !runEnding) {
       slowmo = 1;
       nextShot();
-    } else {
-      slowmo = Math.min(1, slowmo + rawDt * 0.6);
     }
+  }
+
+  shaker.update(rawDt, camPos, camLook);
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    if (particles[i].update(rawDt)) particles.splice(i, 1);
   }
 
   composer.render();
@@ -218,6 +310,7 @@ requestAnimationFrame(loop);
 function resolveOutcome(result) {
   state = 'resolved';
   outcomeTime = performance.now() / 1000;
+  resolvePoint.copy(result.point);
 
   if (result.outcome === 'goal') {
     sfxNet();
@@ -251,7 +344,6 @@ function resolveOutcome(result) {
     shaker.add(0.15);
   }
 
-  // Update run state
   const r = applyShotResult(run, {
     outcome: result.outcome,
     power: shot.meta.power,
@@ -262,7 +354,7 @@ function resolveOutcome(result) {
 
   if (r.done) {
     runEnding = true;
-    setTimeout(() => endChallenge(r.won), 1700);
+    setTimeout(() => endChallenge(r.won), 2100);
   }
 }
 
@@ -270,14 +362,15 @@ function nextShot() {
   resetBall();
   state = 'aim';
   setHint('Swipe up to shoot');
+  setUpKeeperGuess();
 }
 
 function endChallenge(won) {
   state = 'menu';
+  clearTelegraph(keeper);
   if (won) {
     progress.completed[activeChallenge.id] = true;
     saveProgress(progress);
-    // Unlock next? Just by virtue of completed[prev] being true.
     overlay.show({
       title: 'Challenge Complete',
       body: `${activeChallenge.name} — ${run.scored} scored, best streak ${run.bestStreak}. Next challenge unlocked.`,

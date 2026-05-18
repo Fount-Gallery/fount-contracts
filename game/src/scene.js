@@ -60,7 +60,7 @@ function makeSkyGradient() {
 
 function addLights(scene) {
   // Warm low sun, behind goal, backlighting subjects
-  const sun = new THREE.DirectionalLight('#ffb888', 3.0);
+  const sun = new THREE.DirectionalLight('#ffb888', 2.1);
   sun.position.set(2, 4, -18);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -567,28 +567,31 @@ function addFloodlights(scene) {
 }
 
 function addSunSpectacle(scene) {
-  // Big sun disc behind goal — gets caught by bloom
+  // Smaller, dimmer, and pushed off to the side so it doesn't sit behind
+  // the keeper and blow out the goal.
+  const sunX = 6.2;
+  const sunY = 3.4;
+  const sunZ = GOAL.z - 15;
+
   const sun = new THREE.Mesh(
-    new THREE.CircleGeometry(3.2, 48),
-    new THREE.MeshBasicMaterial({ color: 0xffe7a8, transparent: true, opacity: 1.0, depthWrite: false })
+    new THREE.CircleGeometry(2.2, 48),
+    new THREE.MeshBasicMaterial({ color: 0xffd89a, transparent: true, opacity: 0.85, depthWrite: false })
   );
-  sun.position.set(2.5, 4.2, GOAL.z - 14);
+  sun.position.set(sunX, sunY, sunZ);
   scene.add(sun);
 
-  // Inner glow
   const inner = new THREE.Mesh(
-    new THREE.CircleGeometry(5.5, 48),
-    new THREE.MeshBasicMaterial({ color: 0xffae6e, transparent: true, opacity: 0.6, depthWrite: false })
+    new THREE.CircleGeometry(4.0, 48),
+    new THREE.MeshBasicMaterial({ color: 0xffae6e, transparent: true, opacity: 0.35, depthWrite: false })
   );
-  inner.position.set(2.5, 4.2, GOAL.z - 14.05);
+  inner.position.set(sunX, sunY, sunZ - 0.05);
   scene.add(inner);
 
-  // Outer halo
   const halo = new THREE.Mesh(
-    new THREE.CircleGeometry(9.5, 48),
-    new THREE.MeshBasicMaterial({ color: 0xff7a4a, transparent: true, opacity: 0.25, depthWrite: false })
+    new THREE.CircleGeometry(7.5, 48),
+    new THREE.MeshBasicMaterial({ color: 0xff7a4a, transparent: true, opacity: 0.13, depthWrite: false })
   );
-  halo.position.set(2.5, 4.2, GOAL.z - 14.1);
+  halo.position.set(sunX, sunY, sunZ - 0.1);
   scene.add(halo);
 }
 
